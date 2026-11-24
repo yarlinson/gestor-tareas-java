@@ -1,0 +1,13 @@
+# Perfil de pruebas. La base de datos es un PostgreSQL real levantado con Testcontainers
+# (ver IntegracionBase); Flyway y la validación del esquema siguen activos, así que las
+# pruebas también comprueban que las migraciones coinciden con las entidades.
+spring:
+  datasource:
+    # La conexión real (URL, usuario y clave) la aporta @ServiceConnection; este valor solo
+    # evita que falle la variable obligatoria DB_PASSWORD del application.yml principal.
+    password: ""
+
+app:
+  jwt:
+    secret: clave-secreta-solo-para-pruebas-con-mas-de-32-caracteres
+    expiration-minutes: 5

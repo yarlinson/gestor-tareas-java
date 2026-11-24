@@ -1,0 +1,18 @@
+# Compilación
+target/
+
+# Secretos locales
+.env
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+*.swp
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

@@ -1,0 +1,20 @@
+version: 2
+updates:
+  # Dependencias de Maven (Spring Boot, jjwt, springdoc, etc.)
+  - package-ecosystem: maven
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # Versiones de las acciones usadas en .github/workflows
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+
+  # Imágenes base del Dockerfile
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly
