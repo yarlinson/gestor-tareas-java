@@ -68,6 +68,8 @@ Los secretos quedan solo en Render; nunca se suben a Git.
 
 **Probado en un despliegue real:** con la configuración por defecto el límite **no se activa** en Render. Más de 25 intentos fallidos seguidos dieron siempre `401`. La aplicación recibe la IP del proxy (Render y Cloudflare están delante), no la del visitante, y esa IP cambia de una petición a otra; cada intento cae en una cubeta distinta y nunca se agota.
 
+Esto **no afecta al límite por usuario** (`RATE_LIMIT_LOGIN_CAPACITY_PER_USER`, 5 intentos por minuto para cada nombre de usuario): no depende de la IP, así que protege las cuentas de la fuerza bruta aunque la cabecera aún no esté configurada. El límite por IP sigue siendo útil para frenar el registro masivo de cuentas.
+
 La solución es indicar la cabecera que contiene la IP real con `RATE_LIMIT_CLIENT_IP_HEADER`. Esta solución **todavía no está verificada en Render**; hay que comprobar dos condiciones:
 
 1. **La cabecera debe existir.** Define `RATE_LIMIT_DEBUG=true`, haz unas peticiones a `/api/auth/login` y busca en los logs de Render la línea `rate-limit clave=... remoteAddr=... X-Forwarded-For=... CF-Connecting-IP=... True-Client-IP=...`. Elige la cabecera que traiga tu IP pública. Al terminar, vuelve a poner `RATE_LIMIT_DEBUG` en `false`.
@@ -87,6 +89,7 @@ No uses `X-Forwarded-For` completa como clave: el cliente puede añadir valores 
 | `JWT_EXPIRATION_MINUTES` | No | Vigencia del token (por defecto `60`) |
 | `RATE_LIMIT_ENABLED` | No | `true` por defecto |
 | `RATE_LIMIT_CAPACITY` | No | Intentos por IP en la ventana (por defecto `10`) |
+| `RATE_LIMIT_LOGIN_CAPACITY_PER_USER` | No | Intentos de login por nombre de usuario en la ventana, vengan de la IP que vengan (por defecto `5`) |
 | `RATE_LIMIT_WINDOW` | No | Ventana, por ejemplo `1m` (por defecto) |
 | `RATE_LIMIT_CLIENT_IP_HEADER` | No | Cabecera con la IP real del cliente detrás de un proxy (ver la sección sobre el límite de intentos). Vacío usa la IP de la conexión |
 | `RATE_LIMIT_DEBUG` | No | `true` registra en el log la IP de la conexión y las cabeceras de reenvío, solo para diagnosticar |

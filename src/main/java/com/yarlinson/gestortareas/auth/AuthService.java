@@ -1,6 +1,7 @@
 package com.yarlinson.gestortareas.auth;
 
 import com.yarlinson.gestortareas.common.ConflictoException;
+import com.yarlinson.gestortareas.ratelimit.LoginAttemptLimiter;
 import com.yarlinson.gestortareas.security.JwtService;
 import com.yarlinson.gestortareas.usuario.Usuario;
 import com.yarlinson.gestortareas.usuario.UsuarioRepository;
@@ -19,16 +20,19 @@ public class AuthService {
     private final PasswordEncoder codificador;
     private final AuthenticationManager gestorDeAutenticacion;
     private final JwtService jwtService;
+    private final LoginAttemptLimiter limitadorDeLogin;
 
     public AuthService(
             UsuarioRepository usuarios,
             PasswordEncoder codificador,
             AuthenticationManager gestorDeAutenticacion,
-            JwtService jwtService) {
+            JwtService jwtService,
+            LoginAttemptLimiter limitadorDeLogin) {
         this.usuarios = usuarios;
         this.codificador = codificador;
         this.gestorDeAutenticacion = gestorDeAutenticacion;
         this.jwtService = jwtService;
+        this.limitadorDeLogin = limitadorDeLogin;
     }
 
     @Transactional
@@ -50,6 +54,8 @@ public class AuthService {
 
     public TokenResponse iniciarSesion(LoginRequest solicitud) {
         String nombreUsuario = solicitud.nombreUsuario().trim();
+        // Cuenta el intento antes de comprobar la clave: limita la fuerza bruta sobre una cuenta.
+        limitadorDeLogin.registrarIntento(nombreUsuario);
         // Lanza AuthenticationException (-> 401) si las credenciales no son correctas.
         gestorDeAutenticacion.authenticate(
                 new UsernamePasswordAuthenticationToken(nombreUsuario, solicitud.password()));

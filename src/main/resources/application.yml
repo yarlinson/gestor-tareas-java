@@ -43,6 +43,8 @@ app:
     # Solo afecta a /api/auth/**: intentos permitidos por IP en la ventana indicada.
     enabled: ${RATE_LIMIT_ENABLED:true}
     capacity: ${RATE_LIMIT_CAPACITY:10}
+    # Intentos de login permitidos por nombre de usuario en la ventana, vengan de la IP que vengan.
+    login-capacity-per-user: ${RATE_LIMIT_LOGIN_CAPACITY_PER_USER:5}
     window: ${RATE_LIMIT_WINDOW:1m}
     # Detrás de un proxy (Render, Cloudflare...) la IP de la conexión es la del proxy. Indique aquí
     # la cabecera con la IP real del cliente solo si el proxy la fija y el cliente no puede falsearla.

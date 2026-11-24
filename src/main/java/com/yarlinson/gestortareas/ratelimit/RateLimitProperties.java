@@ -10,6 +10,8 @@ import java.time.Duration;
  *
  * @param enabled  activa o desactiva el límite
  * @param capacity intentos permitidos por IP dentro de la ventana
+ * @param loginCapacityPerUser intentos de inicio de sesión permitidos por nombre de usuario
+ *                             dentro de la ventana, vengan de la IP que vengan
  * @param window         ventana en la que se recupera el cupo completo (por ejemplo {@code 1m})
  * @param clientIpHeader cabecera de la que se toma la IP real del cliente cuando hay proxies
  *                       delante (por ejemplo {@code CF-Connecting-IP}). Vacío usa la IP de la
@@ -22,6 +24,7 @@ import java.time.Duration;
 public record RateLimitProperties(
         @DefaultValue("true") boolean enabled,
         @DefaultValue("10") int capacity,
+        @DefaultValue("5") int loginCapacityPerUser,
         @DefaultValue("1m") Duration window,
         @DefaultValue("") String clientIpHeader,
         @DefaultValue("false") boolean debug) {
@@ -29,6 +32,9 @@ public record RateLimitProperties(
     public RateLimitProperties {
         if (capacity < 1) {
             throw new IllegalArgumentException("app.rate-limit.capacity debe ser al menos 1");
+        }
+        if (loginCapacityPerUser < 1) {
+            throw new IllegalArgumentException("app.rate-limit.login-capacity-per-user debe ser al menos 1");
         }
         if (window == null || window.isZero() || window.isNegative()) {
             throw new IllegalArgumentException("app.rate-limit.window debe ser una duración positiva");

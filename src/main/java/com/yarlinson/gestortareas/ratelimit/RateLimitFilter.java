@@ -44,7 +44,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final String PREFIJO_PROTEGIDO = "/api/auth/";
     private static final int MAXIMO_DE_CLIENTES_EN_MEMORIA = 10_000;
-    private static final long NANOS_POR_SEGUNDO = 1_000_000_000L;
     private static final int LONGITUD_MAXIMA_EN_LOG = 200;
 
     /** Una IPv4 o IPv6 en texto; descarta valores arbitrarios que un cliente pudiera enviar. */
@@ -81,9 +80,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        long segundosDeEspera = Math.max(1,
-                (resultado.getNanosToWaitForRefill() + NANOS_POR_SEGUNDO - 1) / NANOS_POR_SEGUNDO);
-        responderDemasiadosIntentos(response, segundosDeEspera);
+        responderDemasiadosIntentos(response, TiempoDeEspera.enSegundos(resultado.getNanosToWaitForRefill()));
     }
 
     /**

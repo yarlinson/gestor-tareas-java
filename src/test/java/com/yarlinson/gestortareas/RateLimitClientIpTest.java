@@ -16,7 +16,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "app.rate-limit.enabled=true",
         "app.rate-limit.capacity=3",
         "app.rate-limit.window=1m",
-        "app.rate-limit.client-ip-header=CF-Connecting-IP"
+        "app.rate-limit.client-ip-header=CF-Connecting-IP",
+        "app.rate-limit.login-capacity-per-user=1000"
 })
 class RateLimitClientIpTest extends IntegracionBase {
 
