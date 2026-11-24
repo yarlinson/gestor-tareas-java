@@ -94,6 +94,7 @@ No uses `X-Forwarded-For` completa como clave: el cliente puede añadir valores 
 | `RATE_LIMIT_CLIENT_IP_HEADER` | No | Cabecera con la IP real del cliente detrás de un proxy (ver la sección sobre el límite de intentos). Vacío usa la IP de la conexión |
 | `RATE_LIMIT_DEBUG` | No | `true` registra en el log la IP de la conexión y las cabeceras de reenvío, solo para diagnosticar |
 | `ADMIN_USERNAME` y `ADMIN_PASSWORD` | No | Crean el administrador inicial al arrancar si ambas tienen valor y el nombre no existe (clave de 8 a 72 caracteres). Ver la sección sobre administrador y recordatorios |
+| `CORS_ALLOWED_ORIGINS` | No | Orígenes del navegador autorizados a llamar a la API, separados por comas y sin comodines (por ejemplo la URL del frontend en Vercel y `http://localhost:3000`). Vacío desactiva CORS |
 | `APP_TIMEZONE` | No | Zona horaria que decide qué día es "hoy" para tareas vencidas y recordatorios (por defecto `America/Bogota`) |
 | `RECORDATORIOS_ENABLED` | No | Activa el proceso de recordatorios (por defecto `true`) |
 | `RECORDATORIOS_CRON` | No | Cuándo se ejecuta, en formato cron de Spring de 6 campos (por defecto cada hora en punto: `0 0 * * * *`) |

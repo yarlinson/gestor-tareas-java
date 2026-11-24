@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -21,11 +22,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.time.Duration;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@EnableConfigurationProperties(RateLimitProperties.class)
+@EnableConfigurationProperties({RateLimitProperties.class, CorsProperties.class})
 public class SecurityConfig {
 
     private static final String[] RUTAS_PUBLICAS = {
@@ -45,6 +52,9 @@ public class SecurityConfig {
             UsuarioDetailsService detallesDeUsuario,
             RateLimitProperties limiteDeIntentos) throws Exception {
         http
+                // Usa el bean corsConfigurationSource. Va antes que la autenticación para que las
+                // peticiones de comprobación previa (OPTIONS) del navegador no necesiten token.
+                .cors(Customizer.withDefaults())
                 // API sin estado que usa tokens en el encabezado (no cookies): CSRF no aplica.
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sesion -> sesion.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -64,6 +74,26 @@ public class SecurityConfig {
                         new JwtAuthenticationFilter(jwtService, detallesDeUsuario),
                         UsernamePasswordAuthenticationFilter.class);
         return http.build();
+    }
+
+    /**
+     * CORS solo para {@code /api/**} y solo para los orígenes configurados. No se permiten
+     * credenciales del navegador (cookies): la autenticación va en la cabecera Authorization.
+     */
+    @Bean
+    CorsConfigurationSource corsConfigurationSource(CorsProperties propiedades) {
+        CorsConfiguration configuracion = new CorsConfiguration();
+        configuracion.setAllowedOrigins(propiedades.allowedOrigins());
+        configuracion.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuracion.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        // Sin esto el navegador oculta estas cabeceras al código JavaScript del cliente.
+        configuracion.setExposedHeaders(List.of("Retry-After", "Location"));
+        configuracion.setAllowCredentials(false);
+        configuracion.setMaxAge(Duration.ofHours(1));
+
+        UrlBasedCorsConfigurationSource fuente = new UrlBasedCorsConfigurationSource();
+        fuente.registerCorsConfiguration("/api/**", configuracion);
+        return fuente;
     }
 
     @Bean

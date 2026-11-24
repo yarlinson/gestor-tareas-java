@@ -112,6 +112,7 @@ erDiagram
 |---|---|---|---|
 | POST | `/api/auth/registro` | Crea un usuario y devuelve su token | Público |
 | POST | `/api/auth/login` | Inicia sesión y devuelve un token | Público |
+| GET | `/api/me` | Usuario autenticado y su rol (para que un cliente sepa qué mostrar) | Usuario |
 | GET | `/api/tareas` | Lista tareas propias (filtros, orden y paginación) | Usuario |
 | GET | `/api/tareas/{id}` | Obtiene una tarea | Usuario |
 | POST | `/api/tareas` | Crea una tarea | Usuario |
@@ -222,6 +223,7 @@ El flujo de [`.github/workflows/ci.yml`](.github/workflows/ci.yml) se ejecuta en
 - **Zona horaria configurable.** "Hoy" (tareas vencidas y avisos) se calcula en `APP_TIMEZONE` y no en la del servidor, que suele ser UTC.
 - **Errores estándar (RFC 7807).** Las respuestas de error usan `application/problem+json`; las validaciones incluyen el detalle por campo.
 - **Secretos por variables de entorno.** La aplicación no arranca si falta `JWT_SECRET` o si tiene menos de 32 caracteres.
+- **CORS con orígenes exactos.** Solo se autorizan los orígenes de `CORS_ALLOWED_ORIGINS`, sin comodines y sin credenciales (el token va en la cabecera `Authorization`, no en cookies). Con la variable vacía no se autoriza ninguno.
 - **Límite de intentos.** `/api/auth/**` admite 10 intentos por minuto y por cliente y, además, el login admite 5 por minuto para cada nombre de usuario sin importar la IP, lo que protege las cuentas de la fuerza bruta (token bucket con Bucket4j); el exceso recibe `429` con `Retry-After`. Se configura con `RATE_LIMIT_*` y está pensado para una sola instancia: con varias habría que compartir el estado, por ejemplo en Redis. Detrás de un proxy la IP de la conexión no es la del visitante, así que hay que indicar la cabecera con la IP real (`RATE_LIMIT_CLIENT_IP_HEADER`); los detalles y la comprobación en [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md).
 
 ## Estructura
