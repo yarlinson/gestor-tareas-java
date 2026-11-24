@@ -115,6 +115,7 @@ erDiagram
 | POST | `/api/auth/login` | Inicia sesión y devuelve un token | Público |
 | GET | `/api/me` | Usuario autenticado y su rol (para que un cliente sepa qué mostrar) | Usuario |
 | GET | `/api/tareas` | Lista tareas propias (filtros, orden y paginación) | Usuario |
+| GET | `/api/tareas/resumen` | Totales: pendientes, hechas, vencidas, para hoy, próximos siete días, sin plazo y por prioridad | Usuario |
 | GET | `/api/tareas/{id}` | Obtiene una tarea | Usuario |
 | POST | `/api/tareas` | Crea una tarea | Usuario |
 | PUT | `/api/tareas/{id}` | Reemplaza título, descripción, fecha límite, prioridad y etiquetas | Usuario |
@@ -128,7 +129,7 @@ erDiagram
 | GET | `/api/admin/estadisticas` | Totales de usuarios y tareas | Admin |
 | POST | `/api/admin/recordatorios/generar` | Ejecuta ahora el proceso de avisos | Admin |
 
-Parámetros de `GET /api/tareas`: `completada=true|false`, `q=texto` (título y descripción, sin distinguir mayúsculas), `prioridad=BAJA|MEDIA|ALTA`, `etiqueta=nombre`, `vencidas=true|false`, `page`, `size` (máx. 100) y `sort` (por ejemplo `sort=prioridad,desc`, que ordena por importancia y no alfabéticamente).
+Parámetros de `GET /api/tareas`: `completada=true|false`, `q=texto` (título y descripción, sin distinguir mayúsculas), `prioridad=BAJA|MEDIA|ALTA`, `etiqueta=nombre`, `vencidas=true|false`, `desde` y `hasta` (rango de fecha límite en formato `AAAA-MM-DD`, ambos extremos incluidos; sirve para pintar un calendario), `sinFecha=true|false`, `page`, `size` (máx. 100) y `sort` (por ejemplo `sort=prioridad,desc`, que ordena por importancia y no alfabéticamente).
 
 Documentación interactiva: <http://localhost:8080/swagger-ui.html> en local, o la URL de la demo (el botón **Authorize** acepta el token de `/api/auth/login`).
 Estado del servicio: `/actuator/health`.

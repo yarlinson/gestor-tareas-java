@@ -62,6 +62,33 @@ public final class TareaSpecs {
         };
     }
 
+    /** Fecha límite dentro del rango (ambos extremos inclusive y opcionales); excluye las tareas sin fecha. */
+    public static Specification<Tarea> conFechaEntre(LocalDate desde, LocalDate hasta) {
+        if (desde == null && hasta == null) {
+            return null;
+        }
+        return (root, query, cb) -> {
+            Predicate rango = cb.isNotNull(root.get("fechaLimite"));
+            if (desde != null) {
+                rango = cb.and(rango, cb.greaterThanOrEqualTo(root.<LocalDate>get("fechaLimite"), desde));
+            }
+            if (hasta != null) {
+                rango = cb.and(rango, cb.lessThanOrEqualTo(root.<LocalDate>get("fechaLimite"), hasta));
+            }
+            return rango;
+        };
+    }
+
+    /** {@code true}: solo tareas sin fecha límite; {@code false}: solo las que la tienen. */
+    public static Specification<Tarea> sinFecha(Boolean sinFecha) {
+        if (sinFecha == null) {
+            return null;
+        }
+        return (root, query, cb) -> sinFecha
+                ? cb.isNull(root.get("fechaLimite"))
+                : cb.isNotNull(root.get("fechaLimite"));
+    }
+
     public static Specification<Tarea> contieneTexto(String texto) {
         if (texto == null || texto.isBlank()) {
             return null;

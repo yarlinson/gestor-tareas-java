@@ -10,6 +10,7 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/tareas")
@@ -41,7 +43,7 @@ public class TareaController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista las tareas propias con filtros (estado, texto, prioridad, etiqueta, vencidas), orden y paginación")
+    @Operation(summary = "Lista las tareas propias con filtros (estado, texto, prioridad, etiqueta, vencidas, rango de fechas límite, sin fecha), orden y paginación")
     public PaginaResponse<TareaResponse> listar(
             @AuthenticationPrincipal UsuarioPrincipal usuario,
             @RequestParam(required = false) Boolean completada,
@@ -49,10 +51,20 @@ public class TareaController {
             @RequestParam(required = false) Prioridad prioridad,
             @RequestParam(required = false) String etiqueta,
             @RequestParam(required = false) Boolean vencidas,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @RequestParam(required = false) Boolean sinFecha,
             @ParameterObject
             @PageableDefault(size = 10, sort = "creadaEn", direction = Sort.Direction.DESC) Pageable paginacion) {
-        FiltroTareas filtro = new FiltroTareas(completada, texto, prioridad, etiqueta, vencidas);
+        FiltroTareas filtro = new FiltroTareas(
+                completada, texto, prioridad, etiqueta, vencidas, desde, hasta, sinFecha);
         return PaginaResponse.desde(servicio.listar(usuario.getId(), filtro, paginacion));
+    }
+
+    @GetMapping("/resumen")
+    @Operation(summary = "Totales de las tareas propias: pendientes, hechas, vencidas, para hoy, próximos siete días, sin plazo y por prioridad")
+    public ResumenTareas resumen(@AuthenticationPrincipal UsuarioPrincipal usuario) {
+        return servicio.resumen(usuario.getId());
     }
 
     @GetMapping("/{id}")

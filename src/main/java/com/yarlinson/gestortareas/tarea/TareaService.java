@@ -16,9 +16,11 @@ import java.util.Objects;
 
 import static com.yarlinson.gestortareas.tarea.TareaSpecs.conEstado;
 import static com.yarlinson.gestortareas.tarea.TareaSpecs.conEtiqueta;
+import static com.yarlinson.gestortareas.tarea.TareaSpecs.conFechaEntre;
 import static com.yarlinson.gestortareas.tarea.TareaSpecs.conPrioridad;
 import static com.yarlinson.gestortareas.tarea.TareaSpecs.contieneTexto;
 import static com.yarlinson.gestortareas.tarea.TareaSpecs.deUsuario;
+import static com.yarlinson.gestortareas.tarea.TareaSpecs.sinFecha;
 import static com.yarlinson.gestortareas.tarea.TareaSpecs.vencidas;
 
 @Service
@@ -52,8 +54,32 @@ public class TareaService {
                 contieneTexto(filtro.texto()),
                 conPrioridad(filtro.prioridad()),
                 conEtiqueta(filtro.etiqueta()),
-                vencidas(filtro.vencidas(), hoy));
+                vencidas(filtro.vencidas(), hoy),
+                conFechaEntre(filtro.desde(), filtro.hasta()),
+                sinFecha(filtro.sinFecha()));
         return tareas.findAll(criterios, pageable).map(tarea -> TareaResponse.desde(tarea, hoy));
+    }
+
+    /** Totales para un panel de resumen. "Hoy" se calcula en la zona horaria configurada. */
+    @Transactional(readOnly = true)
+    public ResumenTareas resumen(Long usuarioId) {
+        LocalDate hoy = hoy();
+        Specification<Tarea> propias = deUsuario(usuarioId);
+        Specification<Tarea> pendientes = propias.and(conEstado(false));
+
+        long total = tareas.count(propias);
+        long cantidadPendientes = tareas.count(pendientes);
+        return new ResumenTareas(
+                total,
+                cantidadPendientes,
+                total - cantidadPendientes,
+                tareas.count(propias.and(vencidas(true, hoy))),
+                tareas.count(pendientes.and(conFechaEntre(hoy, hoy))),
+                tareas.count(pendientes.and(conFechaEntre(hoy.plusDays(1), hoy.plusDays(7)))),
+                tareas.count(pendientes.and(sinFecha(true))),
+                tareas.count(pendientes.and(conPrioridad(Prioridad.ALTA))),
+                tareas.count(pendientes.and(conPrioridad(Prioridad.MEDIA))),
+                tareas.count(pendientes.and(conPrioridad(Prioridad.BAJA))));
     }
 
     @Transactional(readOnly = true)
