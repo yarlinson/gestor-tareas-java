@@ -6,15 +6,41 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build"
+      include: "scope"
+    ignore:
+      # Spring Boot 4 es una migración mayor (Jackson 3, starters modularizados, cambios en
+      # las anotaciones de pruebas...). Se hará de forma manual, no con un PR automático.
+      # Siguen llegando las actualizaciones menores y de parche de la serie 3.5.
+      - dependency-name: "org.springframework.boot:spring-boot-starter-parent"
+        update-types: ["version-update:semver-major"]
+      # springdoc 3.x está pensado para Spring Boot 4; con Boot 3.5 hay que quedarse en la 2.8.x.
+      - dependency-name: "org.springdoc:springdoc-openapi-starter-webmvc-ui"
+        update-types: ["version-update:semver-major"]
 
   # Versiones de las acciones usadas en .github/workflows
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
+    commit-message:
+      prefix: "ci"
+      include: "scope"
 
   # Imágenes base del Dockerfile
   - package-ecosystem: docker
     directory: "/"
     schedule:
       interval: weekly
+    commit-message:
+      prefix: "build"
+      include: "scope"
+    ignore:
+      # El proyecto compila con Java 21 (LTS). No se saltan versiones mayores del JDK/JRE
+      # automáticamente: pasar a otra LTS (por ejemplo la 25) se decide a mano, junto con
+      # el valor de java.version del pom.xml.
+      - dependency-name: "eclipse-temurin"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "maven"
+        update-types: ["version-update:semver-major"]
