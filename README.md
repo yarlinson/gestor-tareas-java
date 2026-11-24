@@ -6,7 +6,8 @@ API REST para gestionar tareas personales. Cada usuario se registra, inicia sesi
 
 ## Demo en vivo
 
-**<https://gestor-tareas-yv7x.onrender.com>** abre la documentación interactiva (Swagger UI): regístrate con `POST /api/auth/registro`, pulsa **Authorize** con el token recibido y prueba los endpoints.
+- **Cliente web:** <https://gestor-tareas-web-omega.vercel.app>, la aplicación completa hecha con Next.js ([código](https://github.com/yarlinson/gestor-tareas-web)).
+- **API y documentación:** <https://gestor-tareas-yv7x.onrender.com> abre la documentación interactiva (Swagger UI): regístrate con `POST /api/auth/registro`, pulsa **Authorize** con el token recibido y prueba los endpoints.
 
 > Está desplegada en el plan gratuito de Render, que apaga el servicio tras 15 minutos sin tráfico. **La primera visita después de un rato puede tardar de uno a tres minutos** en responder mientras la aplicación vuelve a arrancar. Es una demo pública: no guardes datos reales.
 
