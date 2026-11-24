@@ -42,6 +42,13 @@ app:
     # no existe todavía. Defínalas antes del primer arranque con el registro abierto.
     username: ${ADMIN_USERNAME:}
     password: ${ADMIN_PASSWORD:}
+  recordatorios:
+    # Avisos de tareas por vencer y vencidas: se generan al arrancar y según el cron (por defecto,
+    # cada hora en punto, en la zona horaria de app.timezone).
+    enabled: ${RECORDATORIOS_ENABLED:true}
+    cron: "${RECORDATORIOS_CRON:0 0 * * * *}"
+    # Se avisa de las tareas que vencen hoy o dentro de estos días.
+    days-ahead: ${RECORDATORIOS_DIAS_DE_ANTICIPACION:1}
   jwt:
     # Obligatorio y de al menos 32 caracteres. Defínalo como variable de entorno.
     secret: ${JWT_SECRET}

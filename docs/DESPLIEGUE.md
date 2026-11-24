@@ -93,7 +93,21 @@ No uses `X-Forwarded-For` completa como clave: el cliente puede añadir valores 
 | `RATE_LIMIT_WINDOW` | No | Ventana, por ejemplo `1m` (por defecto) |
 | `RATE_LIMIT_CLIENT_IP_HEADER` | No | Cabecera con la IP real del cliente detrás de un proxy (ver la sección sobre el límite de intentos). Vacío usa la IP de la conexión |
 | `RATE_LIMIT_DEBUG` | No | `true` registra en el log la IP de la conexión y las cabeceras de reenvío, solo para diagnosticar |
+| `ADMIN_USERNAME` y `ADMIN_PASSWORD` | No | Crean el administrador inicial al arrancar si ambas tienen valor y el nombre no existe (clave de 8 a 72 caracteres). Ver la sección sobre administrador y recordatorios |
+| `APP_TIMEZONE` | No | Zona horaria que decide qué día es "hoy" para tareas vencidas y recordatorios (por defecto `America/Bogota`) |
+| `RECORDATORIOS_ENABLED` | No | Activa el proceso de recordatorios (por defecto `true`) |
+| `RECORDATORIOS_CRON` | No | Cuándo se ejecuta, en formato cron de Spring de 6 campos (por defecto cada hora en punto: `0 0 * * * *`) |
+| `RECORDATORIOS_DIAS_DE_ANTICIPACION` | No | Se avisa de las tareas que vencen hoy o dentro de estos días (por defecto `1`) |
 | `JAVA_OPTS` | No | Opciones de la JVM; el `Dockerfile` trae valores para instancias de 512 MB |
+
+## Administrador y recordatorios
+
+**Administrador.** El rol `ADMIN` no se obtiene registrándose: se crea al arrancar a partir de `ADMIN_USERNAME` y `ADMIN_PASSWORD`. Para tener uno en Render, agrégalas en **Environment** y deja que redespliegue; después inicia sesión con ese usuario en `/api/auth/login` y usa los endpoints de `/api/admin`.
+
+- Si ya existe una cuenta con ese nombre, **no se modifica** (no se le sube el rol ni se le cambia la clave). Así, que alguien se registre antes con ese nombre no le sirve para quedarse con el rol. Si el registro ya está abierto, elige un nombre poco evidente y usa una clave larga y única.
+- Pasado el primer arranque puedes borrar `ADMIN_PASSWORD`: la cuenta ya existe y la variable no se vuelve a usar.
+
+**Recordatorios.** Un proceso genera avisos (`/api/notificaciones`) de las tareas que vencen hoy o mañana y de las vencidas. Se ejecuta cada hora, y también **una vez al arrancar**. Eso último importa en el plan gratuito de Render: el servicio duerme tras 15 minutos sin tráfico y una tarea horaria no corre mientras duerme, así que al despertar se ponen al día los avisos pendientes. Un administrador también puede lanzarlo cuando quiera con `POST /api/admin/recordatorios/generar`. Está pensado para una sola instancia de la aplicación.
 
 ## Problemas frecuentes
 

@@ -3,6 +3,7 @@ package com.yarlinson.gestortareas.tarea;
 import com.yarlinson.gestortareas.common.RecursoNoEncontradoException;
 import com.yarlinson.gestortareas.usuario.Usuario;
 import com.yarlinson.gestortareas.usuario.UsuarioRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.Objects;
 
 import static com.yarlinson.gestortareas.tarea.TareaSpecs.conEstado;
 import static com.yarlinson.gestortareas.tarea.TareaSpecs.conEtiqueta;
@@ -26,16 +28,19 @@ public class TareaService {
     private final UsuarioRepository usuarios;
     private final EtiquetaService etiquetas;
     private final Clock reloj;
+    private final ApplicationEventPublisher eventos;
 
     public TareaService(
             TareaRepository tareas,
             UsuarioRepository usuarios,
             EtiquetaService etiquetas,
-            Clock reloj) {
+            Clock reloj,
+            ApplicationEventPublisher eventos) {
         this.tareas = tareas;
         this.usuarios = usuarios;
         this.etiquetas = etiquetas;
         this.reloj = reloj;
+        this.eventos = eventos;
     }
 
     @Transactional(readOnly = true)
@@ -72,12 +77,16 @@ public class TareaService {
     @Transactional
     public TareaResponse actualizar(Long usuarioId, Long id, TareaRequest solicitud) {
         Tarea tarea = buscarDelUsuario(id, usuarioId);
+        LocalDate fechaAnterior = tarea.getFechaLimite();
         tarea.actualizar(
                 solicitud.titulo().trim(),
                 normalizar(solicitud.descripcion()),
                 solicitud.fechaLimite(),
                 prioridadOMedia(solicitud));
         tarea.reemplazarEtiquetas(etiquetas.resolver(usuarioId, solicitud.etiquetas()));
+        if (!Objects.equals(fechaAnterior, tarea.getFechaLimite())) {
+            eventos.publishEvent(new FechaLimiteCambiada(tarea.getId()));
+        }
         return TareaResponse.desde(tarea, hoy());
     }
 

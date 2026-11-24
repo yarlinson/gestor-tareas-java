@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @TestPropertySource(properties = {
@@ -120,5 +121,17 @@ class AdminControllerTest extends IntegracionBase {
         assertThat(despues.get("tareasCompletadas").asLong() - antes.get("tareasCompletadas").asLong()).isEqualTo(1);
         assertThat(despues.get("tareasPendientes").asLong() - antes.get("tareasPendientes").asLong()).isEqualTo(2);
         assertThat(despues.get("tareasVencidas").asLong() - antes.get("tareasVencidas").asLong()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Solo el administrador puede lanzar los recordatorios a demanda")
+    void lanzaRecordatorios() throws Exception {
+        mvc.perform(post("/api/admin/recordatorios/generar").header(AUTH, bearer(tokenDeAdmin())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.porVencer").isNumber())
+                .andExpect(jsonPath("$.vencidas").isNumber());
+
+        mvc.perform(post("/api/admin/recordatorios/generar").header(AUTH, bearer(registrarYObtenerToken(nombreUnico()))))
+                .andExpect(status().isForbidden());
     }
 }

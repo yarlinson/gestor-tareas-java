@@ -1,6 +1,8 @@
 package com.yarlinson.gestortareas.admin;
 
 import com.yarlinson.gestortareas.common.PaginaResponse;
+import com.yarlinson.gestortareas.notificacion.RecordatorioService;
+import com.yarlinson.gestortareas.notificacion.ResultadoRecordatorios;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -8,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,9 +25,11 @@ public class AdminController {
     private static final int TAMANO_MAXIMO = 100;
 
     private final AdminService servicio;
+    private final RecordatorioService recordatorios;
 
-    public AdminController(AdminService servicio) {
+    public AdminController(AdminService servicio, RecordatorioService recordatorios) {
         this.servicio = servicio;
+        this.recordatorios = recordatorios;
     }
 
     @GetMapping("/usuarios")
@@ -44,5 +49,11 @@ public class AdminController {
     @Operation(summary = "Totales de usuarios y tareas de toda la aplicación")
     public EstadisticasResponse estadisticas() {
         return servicio.estadisticas();
+    }
+
+    @PostMapping("/recordatorios/generar")
+    @Operation(summary = "Ejecuta ahora el proceso de recordatorios y devuelve cuántos avisos nuevos creó")
+    public ResultadoRecordatorios generarRecordatorios() {
+        return recordatorios.generar();
     }
 }
