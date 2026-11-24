@@ -18,4 +18,8 @@ COPY --from=build /app/target/gestor-tareas-*.jar app.jar
 USER appuser
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+
+# Ajustes de memoria pensados para instancias pequeñas (512 MB). Se pueden cambiar
+# definiendo la variable de entorno JAVA_OPTS en la plataforma.
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]

@@ -28,11 +28,22 @@ management:
       exposure:
         include: health
 
+server:
+  # Las plataformas de despliegue (Render, Railway, Cloud Run...) indican el puerto en PORT.
+  port: ${PORT:8080}
+  # Detrás del proxy de la plataforma, toma la IP real del cliente de X-Forwarded-For.
+  forward-headers-strategy: native
+
 app:
   jwt:
     # Obligatorio y de al menos 32 caracteres. Defínalo como variable de entorno.
     secret: ${JWT_SECRET}
     expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
+  rate-limit:
+    # Solo afecta a /api/auth/**: intentos permitidos por IP en la ventana indicada.
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    capacity: ${RATE_LIMIT_CAPACITY:10}
+    window: ${RATE_LIMIT_WINDOW:1m}
 
 springdoc:
   swagger-ui:

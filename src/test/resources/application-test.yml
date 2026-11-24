@@ -11,3 +11,6 @@ app:
   jwt:
     secret: clave-secreta-solo-para-pruebas-con-mas-de-32-caracteres
     expiration-minutes: 5
+  rate-limit:
+    # Desactivado para que las pruebas no se bloqueen entre sí; RateLimitTest lo activa.
+    enabled: false

@@ -12,11 +12,12 @@ API REST para gestionar tareas personales. Cada usuario se registra, inicia sesi
 | Framework | Spring Boot 3.5 (Web, Validation, Actuator) |
 | Persistencia | Spring Data JPA / Hibernate, PostgreSQL 16 |
 | Migraciones | Flyway |
-| Seguridad | Spring Security 6, JWT (jjwt), contraseñas con BCrypt |
+| Seguridad | Spring Security 6, JWT (jjwt), contraseñas con BCrypt, límite de intentos por IP (Bucket4j) |
 | Documentación | OpenAPI / Swagger UI (springdoc) |
 | Pruebas | JUnit 5, MockMvc, AssertJ, Testcontainers (PostgreSQL real), JaCoCo |
 | Contenedores | Docker, Docker Compose |
 | CI/CD | GitHub Actions, Dependabot |
+| Despliegue | Render (Docker) + Neon (PostgreSQL), plan gratuito |
 
 ## Endpoints
 
@@ -75,6 +76,14 @@ curl -X POST http://localhost:8080/api/tareas \
 curl "http://localhost:8080/api/tareas?completada=false&q=spring" -H "Authorization: Bearer <TOKEN>"
 ```
 
+## Despliegue
+
+La aplicación está preparada para publicarse en [Render](https://render.com) (contenedor Docker) con PostgreSQL en [Neon](https://neon.com), ambos con plan gratuito. La guía paso a paso está en [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md) y el servicio se describe en [`render.yaml`](render.yaml).
+
+- Toda la configuración llega por variables de entorno (`DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`); el puerto lo toma de `PORT`, que define la plataforma.
+- La URL raíz redirige a Swagger UI, así que el enlace público abre directamente la documentación interactiva.
+- Con el plan gratuito el servicio se duerme tras un rato sin tráfico: la primera petición posterior puede tardar de uno a tres minutos mientras la aplicación vuelve a arrancar.
+
 ## Pruebas
 
 ```powershell
@@ -105,6 +114,7 @@ El flujo de [`.github/workflows/ci.yml`](.github/workflows/ci.yml) se ejecuta en
 - **Filtros dinámicos con `Specification`.** Estado y texto son opcionales y se combinan sin escribir una consulta por cada variante; los comodines `%` y `_` de la búsqueda se escapan.
 - **Errores estándar (RFC 7807).** Las respuestas de error usan `application/problem+json`; las validaciones incluyen el detalle por campo.
 - **Secretos por variables de entorno.** La aplicación no arranca si falta `JWT_SECRET` o si tiene menos de 32 caracteres.
+- **Límite de intentos.** `/api/auth/**` admite 10 intentos por minuto y por IP (token bucket con Bucket4j); el exceso recibe `429` con `Retry-After`. Se configura con `RATE_LIMIT_*` y está pensado para una sola instancia: con varias habría que compartir el estado, por ejemplo en Redis.
 
 ## Estructura
 

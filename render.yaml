@@ -1,0 +1,19 @@
+# Blueprint de Render: crea el servicio web a partir del Dockerfile de este repositorio.
+# La base de datos PostgreSQL se crea aparte (por ejemplo en Neon); ver docs/DESPLIEGUE.md.
+services:
+  - type: web
+    name: gestor-tareas
+    runtime: docker
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      # Datos de conexión a PostgreSQL: Render los pide al crear el Blueprint y no se guardan en Git.
+      - key: DB_URL
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      # Render genera un valor aleatorio de 256 bits la primera vez.
+      - key: JWT_SECRET
+        generateValue: true
