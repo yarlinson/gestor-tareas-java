@@ -26,21 +26,24 @@ Para una demo de portafolio es suficiente; para producción real hay que pasar a
 
 1. Crea una cuenta en [neon.com](https://neon.com) y un proyecto nuevo.
 2. Elige una **región cercana a la de Render** (si Render queda en Oregón, usa AWS US West 2; si queda en Fráncfort, usa Fráncfort). Menos distancia significa menos latencia.
-3. En el panel, pulsa **Connect** y copia la cadena de conexión. Tiene esta forma:
+3. En el panel, pulsa **Connect** y **desactiva la opción "Connection pooling"** para obtener la conexión *directa*: su host no lleva `-pooler`. Neon recomienda la conexión directa para ejecutar migraciones (el pooler no admite los bloqueos de sesión que usan esas herramientas), y la aplicación ya trae su propio pool de conexiones.
+4. Copia la cadena de conexión. Tiene esta forma (valores de ejemplo):
 
    ```
-   postgresql://USUARIO:CLAVE@HOST/BASE?sslmode=require
+   postgresql://neondb_owner:LaClave123@ep-ejemplo-123456.us-east-2.aws.neon.tech/neondb?sslmode=require
    ```
 
-4. Conviértela en **tres variables** (la aplicación recibe el usuario y la clave por separado):
+5. **No la pegues tal cual en Render.** La aplicación necesita el formato JDBC y recibe el usuario y la clave por separado. Divídela en **tres variables**:
 
-   | Variable | Valor |
+   | Variable | Valor (con el ejemplo anterior) |
    |---|---|
-   | `DB_URL` | `jdbc:postgresql://HOST/BASE?sslmode=require` |
-   | `DB_USER` | `USUARIO` |
-   | `DB_PASSWORD` | `CLAVE` |
+   | `DB_URL` | `jdbc:postgresql://ep-ejemplo-123456.us-east-2.aws.neon.tech/neondb?sslmode=require` |
+   | `DB_USER` | `neondb_owner` |
+   | `DB_PASSWORD` | `LaClave123` |
 
-   Si la cadena trae `channel_binding=require`, quítalo: el driver JDBC no lo usa. Deja `sslmode=require`, que Neon exige.
+   - `DB_URL` **debe empezar por `jdbc:postgresql://`** y no lleva usuario ni clave. Si no, la aplicación falla al arrancar con `'url' must start with "jdbc"`.
+   - Si la cadena trae `channel_binding=require`, quítalo: el driver JDBC no lo usa. Deja `sslmode=require`, que Neon exige.
+   - Si la clave tiene caracteres como `%40`, están codificados para URL: escríbelos decodificados en `DB_PASSWORD` (`%40` es `@`).
 
 No hace falta crear tablas: Flyway las crea al arrancar la aplicación.
 
@@ -59,9 +62,18 @@ Los secretos quedan solo en Render; nunca se suben a Git.
 1. Abre la URL: debe redirigir a **Swagger UI**.
 2. Abre `/actuator/health`: debe responder `{"status":"UP"}`.
 3. En Swagger, usa `POST /api/auth/registro`, copia el token, pulsa **Authorize** y crea una tarea.
-4. Comprueba el límite de intentos: más de 10 peticiones seguidas a `/api/auth/login` desde la misma IP deben recibir `429`.
+4. Comprueba el límite de intentos: más de 10 peticiones seguidas a `/api/auth/login` desde la misma conexión deben recibir `429`. Si todas devuelven `401`, sigue con la sección siguiente.
 
-   Si recibes `429` con muy pocas peticiones o desde distintos lugares, la plataforma no está pasando la IP real del cliente y todos comparten un mismo cupo. Aumenta `RATE_LIMIT_CAPACITY` o revisa `server.forward-headers-strategy` en `application.yml`.
+## Límite de intentos detrás del proxy de Render
+
+**Probado en un despliegue real:** con la configuración por defecto el límite **no se activa** en Render. Más de 25 intentos fallidos seguidos dieron siempre `401`. La aplicación recibe la IP del proxy (Render y Cloudflare están delante), no la del visitante, y esa IP cambia de una petición a otra; cada intento cae en una cubeta distinta y nunca se agota.
+
+La solución es indicar la cabecera que contiene la IP real con `RATE_LIMIT_CLIENT_IP_HEADER`. Esta solución **todavía no está verificada en Render**; hay que comprobar dos condiciones:
+
+1. **La cabecera debe existir.** Define `RATE_LIMIT_DEBUG=true`, haz unas peticiones a `/api/auth/login` y busca en los logs de Render la línea `rate-limit clave=... remoteAddr=... X-Forwarded-For=... CF-Connecting-IP=... True-Client-IP=...`. Elige la cabecera que traiga tu IP pública. Al terminar, vuelve a poner `RATE_LIMIT_DEBUG` en `false`.
+2. **El cliente no debe poder falsearla.** Si el visitante pudiera enviar su propia cabecera y esta llegara intacta, cambiaría el valor en cada intento y evadiría el límite. Con la variable ya configurada, haz 12 peticiones seguidas a `/api/auth/login` enviando en cada una un valor distinto, por ejemplo `-H "CF-Connecting-IP: 1.2.3.N"`. Si el proxy la sobrescribe, la aplicación sigue viendo tu IP real y las últimas respuestas son `429`. Si todas son `401`, la cabecera se puede falsear y no sirve como clave.
+
+No uses `X-Forwarded-For` completa como clave: el cliente puede añadir valores al principio de esa lista (Render solo agrega al final).
 
 ## Variables de entorno
 
@@ -76,6 +88,8 @@ Los secretos quedan solo en Render; nunca se suben a Git.
 | `RATE_LIMIT_ENABLED` | No | `true` por defecto |
 | `RATE_LIMIT_CAPACITY` | No | Intentos por IP en la ventana (por defecto `10`) |
 | `RATE_LIMIT_WINDOW` | No | Ventana, por ejemplo `1m` (por defecto) |
+| `RATE_LIMIT_CLIENT_IP_HEADER` | No | Cabecera con la IP real del cliente detrás de un proxy (ver la sección sobre el límite de intentos). Vacío usa la IP de la conexión |
+| `RATE_LIMIT_DEBUG` | No | `true` registra en el log la IP de la conexión y las cabeceras de reenvío, solo para diagnosticar |
 | `JAVA_OPTS` | No | Opciones de la JVM; el `Dockerfile` trae valores para instancias de 512 MB |
 
 ## Problemas frecuentes
@@ -83,6 +97,7 @@ Los secretos quedan solo en Render; nunca se suben a Git.
 | Síntoma | Causa probable |
 |---|---|
 | El despliegue falla o queda reiniciando | Revisa los **Logs** en Render. Casi siempre es `DB_URL` mal formada o una clave incorrecta. |
+| `'url' must start with "jdbc"` | `DB_URL` tiene la cadena de Neon sin convertir (`postgresql://...`). Debe ser `jdbc:postgresql://HOST/BASE?sslmode=require`, sin usuario ni clave. |
 | Error de SSL o "connection refused" | Falta `?sslmode=require` en `DB_URL`. |
 | `JWT_SECRET debe tener al menos 32 caracteres` | Se escribió un valor corto a mano; deja que Render lo genere. |
 | Muy lento la primera vez | Es el arranque en frío del plan gratuito (servicio y base dormidos). |

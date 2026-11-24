@@ -114,7 +114,7 @@ El flujo de [`.github/workflows/ci.yml`](.github/workflows/ci.yml) se ejecuta en
 - **Filtros dinámicos con `Specification`.** Estado y texto son opcionales y se combinan sin escribir una consulta por cada variante; los comodines `%` y `_` de la búsqueda se escapan.
 - **Errores estándar (RFC 7807).** Las respuestas de error usan `application/problem+json`; las validaciones incluyen el detalle por campo.
 - **Secretos por variables de entorno.** La aplicación no arranca si falta `JWT_SECRET` o si tiene menos de 32 caracteres.
-- **Límite de intentos.** `/api/auth/**` admite 10 intentos por minuto y por IP (token bucket con Bucket4j); el exceso recibe `429` con `Retry-After`. Se configura con `RATE_LIMIT_*` y está pensado para una sola instancia: con varias habría que compartir el estado, por ejemplo en Redis.
+- **Límite de intentos.** `/api/auth/**` admite 10 intentos por minuto y por cliente (token bucket con Bucket4j); el exceso recibe `429` con `Retry-After`. Se configura con `RATE_LIMIT_*` y está pensado para una sola instancia: con varias habría que compartir el estado, por ejemplo en Redis. Detrás de un proxy la IP de la conexión no es la del visitante, así que hay que indicar la cabecera con la IP real (`RATE_LIMIT_CLIENT_IP_HEADER`); los detalles y la comprobación en [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md).
 
 ## Estructura
 

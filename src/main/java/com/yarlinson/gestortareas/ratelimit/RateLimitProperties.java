@@ -10,13 +10,21 @@ import java.time.Duration;
  *
  * @param enabled  activa o desactiva el límite
  * @param capacity intentos permitidos por IP dentro de la ventana
- * @param window   ventana en la que se recupera el cupo completo (por ejemplo {@code 1m})
+ * @param window         ventana en la que se recupera el cupo completo (por ejemplo {@code 1m})
+ * @param clientIpHeader cabecera de la que se toma la IP real del cliente cuando hay proxies
+ *                       delante (por ejemplo {@code CF-Connecting-IP}). Vacío usa la IP de la
+ *                       conexión. Solo debe indicarse una cabecera que fije el proxy y que el
+ *                       cliente no pueda falsear; si no, cualquiera evitaría el límite.
+ * @param debug          registra en el log la IP de la conexión y las cabeceras de reenvío
+ *                       para diagnosticar; no activar de forma permanente
  */
 @ConfigurationProperties(prefix = "app.rate-limit")
 public record RateLimitProperties(
         @DefaultValue("true") boolean enabled,
         @DefaultValue("10") int capacity,
-        @DefaultValue("1m") Duration window) {
+        @DefaultValue("1m") Duration window,
+        @DefaultValue("") String clientIpHeader,
+        @DefaultValue("false") boolean debug) {
 
     public RateLimitProperties {
         if (capacity < 1) {

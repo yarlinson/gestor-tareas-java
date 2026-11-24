@@ -44,6 +44,11 @@ app:
     enabled: ${RATE_LIMIT_ENABLED:true}
     capacity: ${RATE_LIMIT_CAPACITY:10}
     window: ${RATE_LIMIT_WINDOW:1m}
+    # Detrás de un proxy (Render, Cloudflare...) la IP de la conexión es la del proxy. Indique aquí
+    # la cabecera con la IP real del cliente solo si el proxy la fija y el cliente no puede falsearla.
+    client-ip-header: ${RATE_LIMIT_CLIENT_IP_HEADER:}
+    # Registra la IP de la conexión y las cabeceras de reenvío para diagnosticar; dejar en false.
+    debug: ${RATE_LIMIT_DEBUG:false}
 
 springdoc:
   swagger-ui:
