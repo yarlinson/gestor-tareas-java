@@ -41,14 +41,18 @@ public class TareaController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista las tareas propias con filtro por estado, búsqueda de texto y paginación")
+    @Operation(summary = "Lista las tareas propias con filtros (estado, texto, prioridad, etiqueta, vencidas), orden y paginación")
     public PaginaResponse<TareaResponse> listar(
             @AuthenticationPrincipal UsuarioPrincipal usuario,
             @RequestParam(required = false) Boolean completada,
             @RequestParam(name = "q", required = false) String texto,
+            @RequestParam(required = false) Prioridad prioridad,
+            @RequestParam(required = false) String etiqueta,
+            @RequestParam(required = false) Boolean vencidas,
             @ParameterObject
             @PageableDefault(size = 10, sort = "creadaEn", direction = Sort.Direction.DESC) Pageable paginacion) {
-        return PaginaResponse.desde(servicio.listar(usuario.getId(), completada, texto, paginacion));
+        FiltroTareas filtro = new FiltroTareas(completada, texto, prioridad, etiqueta, vencidas);
+        return PaginaResponse.desde(servicio.listar(usuario.getId(), filtro, paginacion));
     }
 
     @GetMapping("/{id}")

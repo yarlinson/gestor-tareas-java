@@ -9,33 +9,51 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDate;
+
 import static com.yarlinson.gestortareas.tarea.TareaSpecs.conEstado;
+import static com.yarlinson.gestortareas.tarea.TareaSpecs.conEtiqueta;
+import static com.yarlinson.gestortareas.tarea.TareaSpecs.conPrioridad;
 import static com.yarlinson.gestortareas.tarea.TareaSpecs.contieneTexto;
 import static com.yarlinson.gestortareas.tarea.TareaSpecs.deUsuario;
+import static com.yarlinson.gestortareas.tarea.TareaSpecs.vencidas;
 
 @Service
 public class TareaService {
 
     private final TareaRepository tareas;
     private final UsuarioRepository usuarios;
+    private final EtiquetaService etiquetas;
+    private final Clock reloj;
 
-    public TareaService(TareaRepository tareas, UsuarioRepository usuarios) {
+    public TareaService(
+            TareaRepository tareas,
+            UsuarioRepository usuarios,
+            EtiquetaService etiquetas,
+            Clock reloj) {
         this.tareas = tareas;
         this.usuarios = usuarios;
+        this.etiquetas = etiquetas;
+        this.reloj = reloj;
     }
 
     @Transactional(readOnly = true)
-    public Page<TareaResponse> listar(Long usuarioId, Boolean completada, String texto, Pageable pageable) {
-        Specification<Tarea> filtro = Specification.allOf(
+    public Page<TareaResponse> listar(Long usuarioId, FiltroTareas filtro, Pageable pageable) {
+        LocalDate hoy = hoy();
+        Specification<Tarea> criterios = Specification.allOf(
                 deUsuario(usuarioId),
-                conEstado(completada),
-                contieneTexto(texto));
-        return tareas.findAll(filtro, pageable).map(TareaResponse::desde);
+                conEstado(filtro.completada()),
+                contieneTexto(filtro.texto()),
+                conPrioridad(filtro.prioridad()),
+                conEtiqueta(filtro.etiqueta()),
+                vencidas(filtro.vencidas(), hoy));
+        return tareas.findAll(criterios, pageable).map(tarea -> TareaResponse.desde(tarea, hoy));
     }
 
     @Transactional(readOnly = true)
     public TareaResponse obtener(Long usuarioId, Long id) {
-        return TareaResponse.desde(buscarDelUsuario(id, usuarioId));
+        return TareaResponse.desde(buscarDelUsuario(id, usuarioId), hoy());
     }
 
     @Transactional
@@ -45,8 +63,10 @@ public class TareaService {
                 solicitud.titulo().trim(),
                 normalizar(solicitud.descripcion()),
                 solicitud.fechaLimite(),
+                prioridadOMedia(solicitud),
                 propietario);
-        return TareaResponse.desde(tareas.save(tarea));
+        tarea.reemplazarEtiquetas(etiquetas.resolver(usuarioId, solicitud.etiquetas()));
+        return TareaResponse.desde(tareas.save(tarea), hoy());
     }
 
     @Transactional
@@ -55,15 +75,17 @@ public class TareaService {
         tarea.actualizar(
                 solicitud.titulo().trim(),
                 normalizar(solicitud.descripcion()),
-                solicitud.fechaLimite());
-        return TareaResponse.desde(tarea);
+                solicitud.fechaLimite(),
+                prioridadOMedia(solicitud));
+        tarea.reemplazarEtiquetas(etiquetas.resolver(usuarioId, solicitud.etiquetas()));
+        return TareaResponse.desde(tarea, hoy());
     }
 
     @Transactional
     public TareaResponse cambiarEstado(Long usuarioId, Long id, boolean completada) {
         Tarea tarea = buscarDelUsuario(id, usuarioId);
         tarea.marcarCompletada(completada);
-        return TareaResponse.desde(tarea);
+        return TareaResponse.desde(tarea, hoy());
     }
 
     @Transactional
@@ -78,6 +100,14 @@ public class TareaService {
     private Tarea buscarDelUsuario(Long id, Long usuarioId) {
         return tareas.findByIdAndUsuarioId(id, usuarioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Tarea " + id + " no encontrada"));
+    }
+
+    private LocalDate hoy() {
+        return LocalDate.now(reloj);
+    }
+
+    private static Prioridad prioridadOMedia(TareaRequest solicitud) {
+        return solicitud.prioridad() != null ? solicitud.prioridad() : Prioridad.MEDIA;
     }
 
     private static String normalizar(String texto) {

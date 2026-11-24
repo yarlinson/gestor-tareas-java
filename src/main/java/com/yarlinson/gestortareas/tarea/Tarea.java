@@ -2,18 +2,24 @@ package com.yarlinson.gestortareas.tarea;
 
 import com.yarlinson.gestortareas.usuario.Usuario;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "tareas")
@@ -35,6 +41,10 @@ public class Tarea {
     @Column(name = "fecha_limite")
     private LocalDate fechaLimite;
 
+    @Convert(converter = PrioridadConverter.class)
+    @Column(nullable = false)
+    private Prioridad prioridad = Prioridad.MEDIA;
+
     @Column(name = "creada_en", nullable = false, updatable = false)
     private Instant creadaEn;
 
@@ -45,14 +55,24 @@ public class Tarea {
     @JoinColumn(name = "usuario_id", nullable = false, updatable = false)
     private Usuario usuario;
 
+    /** Se cargan por lotes de 50 tareas para no hacer una consulta por cada tarea de un listado. */
+    @ManyToMany
+    @JoinTable(
+            name = "tarea_etiqueta",
+            joinColumns = @JoinColumn(name = "tarea_id"),
+            inverseJoinColumns = @JoinColumn(name = "etiqueta_id"))
+    @BatchSize(size = 50)
+    private Set<Etiqueta> etiquetas = new LinkedHashSet<>();
+
     protected Tarea() {
         // Requerido por JPA
     }
 
-    public Tarea(String titulo, String descripcion, LocalDate fechaLimite, Usuario usuario) {
+    public Tarea(String titulo, String descripcion, LocalDate fechaLimite, Prioridad prioridad, Usuario usuario) {
         this.titulo = titulo;
         this.descripcion = descripcion;
         this.fechaLimite = fechaLimite;
+        this.prioridad = prioridad;
         this.usuario = usuario;
     }
 
@@ -63,16 +83,22 @@ public class Tarea {
         this.actualizadaEn = ahora;
     }
 
-    public void actualizar(String titulo, String descripcion, LocalDate fechaLimite) {
+    public void actualizar(String titulo, String descripcion, LocalDate fechaLimite, Prioridad prioridad) {
         this.titulo = titulo;
         this.descripcion = descripcion;
         this.fechaLimite = fechaLimite;
+        this.prioridad = prioridad;
         this.actualizadaEn = Instant.now();
     }
 
     public void marcarCompletada(boolean completada) {
         this.completada = completada;
         this.actualizadaEn = Instant.now();
+    }
+
+    public void reemplazarEtiquetas(Set<Etiqueta> nuevas) {
+        this.etiquetas.clear();
+        this.etiquetas.addAll(nuevas);
     }
 
     public Long getId() {
@@ -95,6 +121,10 @@ public class Tarea {
         return fechaLimite;
     }
 
+    public Prioridad getPrioridad() {
+        return prioridad;
+    }
+
     public Instant getCreadaEn() {
         return creadaEn;
     }
@@ -105,5 +135,9 @@ public class Tarea {
 
     public Usuario getUsuario() {
         return usuario;
+    }
+
+    public Set<Etiqueta> getEtiquetas() {
+        return etiquetas;
     }
 }

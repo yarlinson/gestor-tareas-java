@@ -1,6 +1,10 @@
 package com.yarlinson.gestortareas.tarea;
 
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
+
+import java.time.LocalDate;
+import java.util.Locale;
 
 /**
  * Filtros dinámicos para la búsqueda de tareas. Los métodos que reciben un criterio
@@ -23,6 +27,39 @@ public final class TareaSpecs {
             return null;
         }
         return (root, query, cb) -> cb.equal(root.get("completada"), completada);
+    }
+
+    public static Specification<Tarea> conPrioridad(Prioridad prioridad) {
+        if (prioridad == null) {
+            return null;
+        }
+        return (root, query, cb) -> cb.equal(root.get("prioridad"), prioridad);
+    }
+
+    /** Tareas que tienen una etiqueta con ese nombre (sin distinguir mayúsculas). */
+    public static Specification<Tarea> conEtiqueta(String nombre) {
+        if (nombre == null || nombre.isBlank()) {
+            return null;
+        }
+        String normalizado = nombre.trim().toLowerCase(Locale.ROOT);
+        return (root, query, cb) -> cb.equal(root.join("etiquetas").<String>get("nombre"), normalizado);
+    }
+
+    /**
+     * Vencidas: no completadas y con fecha límite anterior a {@code hoy}. Con {@code false}
+     * devuelve el resto de tareas.
+     */
+    public static Specification<Tarea> vencidas(Boolean soloVencidas, LocalDate hoy) {
+        if (soloVencidas == null) {
+            return null;
+        }
+        return (root, query, cb) -> {
+            Predicate vencida = cb.and(
+                    cb.isFalse(root.<Boolean>get("completada")),
+                    cb.isNotNull(root.get("fechaLimite")),
+                    cb.lessThan(root.<LocalDate>get("fechaLimite"), hoy));
+            return soloVencidas ? vencida : cb.not(vencida);
+        };
     }
 
     public static Specification<Tarea> contieneTexto(String texto) {

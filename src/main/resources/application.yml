@@ -35,6 +35,8 @@ server:
   forward-headers-strategy: native
 
 app:
+  # Zona horaria que decide qué día es "hoy" (tareas vencidas, recordatorios).
+  timezone: ${APP_TIMEZONE:America/Bogota}
   jwt:
     # Obligatorio y de al menos 32 caracteres. Defínalo como variable de entorno.
     secret: ${JWT_SECRET}
