@@ -37,6 +37,11 @@ server:
 app:
   # Zona horaria que decide qué día es "hoy" (tareas vencidas, recordatorios).
   timezone: ${APP_TIMEZONE:America/Bogota}
+  admin:
+    # Administrador inicial: se crea al arrancar solo si ambas variables tienen valor y el nombre
+    # no existe todavía. Defínalas antes del primer arranque con el registro abierto.
+    username: ${ADMIN_USERNAME:}
+    password: ${ADMIN_PASSWORD:}
   jwt:
     # Obligatorio y de al menos 32 caracteres. Defínalo como variable de entorno.
     secret: ${JWT_SECRET}

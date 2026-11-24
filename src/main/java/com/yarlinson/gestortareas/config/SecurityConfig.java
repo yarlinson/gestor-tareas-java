@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -23,6 +24,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @EnableConfigurationProperties(RateLimitProperties.class)
 public class SecurityConfig {
 
@@ -50,7 +52,10 @@ public class SecurityConfig {
                         .requestMatchers(RUTAS_PUBLICAS).permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(errores -> errores
-                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                        // Autenticado pero sin el rol necesario (@PreAuthorize): 403, sin pasar por /error.
+                        .accessDeniedHandler((peticion, respuesta, ex) ->
+                                respuesta.setStatus(HttpStatus.FORBIDDEN.value())))
                 // El límite de intentos va primero: así un abuso se corta antes de tocar la base de datos.
                 .addFilterBefore(
                         new RateLimitFilter(limiteDeIntentos),

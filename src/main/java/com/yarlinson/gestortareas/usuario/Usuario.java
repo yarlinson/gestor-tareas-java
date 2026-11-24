@@ -2,6 +2,8 @@ package com.yarlinson.gestortareas.usuario;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -28,6 +30,10 @@ public class Usuario {
     @Column(nullable = false, length = 100)
     private String password;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private Rol rol = Rol.USER;
+
     @Column(name = "creado_en", nullable = false, updatable = false)
     private Instant creadoEn;
 
@@ -35,10 +41,16 @@ public class Usuario {
         // Requerido por JPA
     }
 
+    /** Crea un usuario corriente (rol {@code USER}). */
     public Usuario(String nombreUsuario, String email, String passwordHash) {
+        this(nombreUsuario, email, passwordHash, Rol.USER);
+    }
+
+    public Usuario(String nombreUsuario, String email, String passwordHash, Rol rol) {
         this.nombreUsuario = nombreUsuario;
         this.email = email;
         this.password = passwordHash;
+        this.rol = rol;
     }
 
     @PrePersist
@@ -60,6 +72,10 @@ public class Usuario {
 
     public String getPassword() {
         return password;
+    }
+
+    public Rol getRol() {
+        return rol;
     }
 
     public Instant getCreadoEn() {
